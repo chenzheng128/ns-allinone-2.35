@@ -46,6 +46,18 @@
 
 ########################################################
 
+# ns by examples start
+Application/MmApp set rate0_ 0.3mb
+Application/MmApp set rate1_ 0.6mb
+Application/MmApp set rate2_ 0.9mb
+Application/MmApp set rate3_ 1.2mb
+Application/MmApp set rate4_ 1.5mb
+
+Application/MmApp set pktsize_ 1000
+Application/MmApp set random_ false
+# ns by examples end
+
+
 # Debojyoti added this
 Simulator set useasim_ 1
 Asim set debug_ false

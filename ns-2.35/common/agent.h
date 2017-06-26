@@ -72,6 +72,12 @@ class Agent : public Connector {
  public:
 	Agent(packet_t pktType);
 	virtual ~Agent();
+	
+	// ns by examples start	
+	virtual int supportMM() {return 0;}	
+	virtual void enableMM() {}
+	// ns by examples end 
+
 	void recv(Packet*, Handler*);
 	
 	//added for edrop tracing - ratul

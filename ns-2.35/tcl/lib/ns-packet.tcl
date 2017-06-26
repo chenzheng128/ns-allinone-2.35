@@ -183,6 +183,10 @@ set protolist {
 	Encap 	# common/encap.cc
         IPinIP 	# IP encapsulation 
 	HDLC 	# High Level Data Link Control
+	
+	# ns_by_examples
+ 	Multimedia  # ns_by_examples DIY protocal
+	
 }
 set allhdrs [regsub -all {#.*?\n} $protolist \n]; # strip comments from above
 foreach prot $allhdrs {

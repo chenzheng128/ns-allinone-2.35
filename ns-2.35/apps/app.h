@@ -50,6 +50,11 @@ public:
 	Application();
 	virtual void send(int nbytes);
 	virtual void recv(int nbytes);
+	
+	// ns by examples start
+	virtual void recv_msg(int nbytes, const char *msg = 0){};
+	// ns by examples end
+
 	virtual void resume();
 
 protected:
