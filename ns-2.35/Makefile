@@ -333,8 +333,15 @@ OBJ_CC = \
 	wpan/p802_15_4sscs.o wpan/p802_15_4timer.o \
 	wpan/p802_15_4trace.o wpan/p802_15_4transac.o \
 	apps/pbc.o \
+	\
+	mm-app.o udp-mm.o \
+	dtrr-queue.o \
+	\
 	$(OBJ_STL)
-
+##  ns_by_examples  
+# mm-app.o udp-mm.o 
+# dtrr-queue.o
+## ns_by_examples
 
 # don't allow comments to follow continuation lines
 
