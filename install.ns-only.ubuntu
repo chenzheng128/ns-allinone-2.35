@@ -1,0 +1,235 @@
+#! /bin/sh
+#
+# Copyright (C) 2000 by USC/ISI
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms are permitted
+# provided that the above copyright notice and this paragraph are
+# duplicated in all such forms and that any documentation, advertising
+# materials, and other materials related to such distribution and use
+# acknowledge that the software was developed by the University of
+# Southern California, Information Sciences Institute.  The name of the
+# University may not be used to endorse or promote products derived from
+# this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+# $Header: /cvsroot/nsnam/ns-2/allinone/install,v 1.31 2007/03/10 23:40:05 tom_henderson Exp $
+
+die() {
+	echo "$@"  1>&2
+	test ! -z "$blame" && echo "$blame" 1>&2
+	exit 1
+}
+
+warn() {
+	echo "$@"
+}
+
+test_proceed() { 
+        echo "";
+        echo "The above test indicates that your installation of Cygwin";
+        echo "is probably NOT SUITABLE for installing ns-2 allinone.";
+        echo "(More details can be found in the specific error message above.)";
+        echo "";
+        echo -n "Do you wish to proceed regardless? [y/N] "
+        read answer;
+        if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+                die "Installation aborted...";
+                exit 1;
+        fi;
+        echo "";
+        echo "*** OK, but you're on your own... ***";
+        echo "";
+}
+
+test_packages() {
+         for i in $@; do 
+                echo -n "Checking for ${i}... ";
+                cygcheck -c ${i} | grep ${i} >/dev/null 2>&1;
+                if [ "$?" -eq "0" ]; then
+                        echo "ok"; 
+                else
+                        echo "NO!";
+                        echo "";
+                        echo "Package ${i} is not present on your system.";
+                        echo "";
+                        echo "Please install it using Cygwin's setup.exe";
+                        echo "before trying to install the ns-2 distribution.";
+                        test_proceed;
+                fi; 
+        done;
+}
+
+cygwin_tests() {
+        echo -n "Checking Cygwin version is >= 1.7.1... "
+        cmaj=` uname -r | sed -e 's/^\([0-9]*\)\.\([0-9]*\).\([0-9]*\).*/\1/'`;
+        echo $cmaj | grep -v [0-9] >/dev/null 2>&1
+        if [ "$?" -eq "0" ]; then
+                cmaj=0;
+        fi;
+        cmin=` uname -r | sed -e 's/^\([0-9]*\)\.\([0-9]*\).\([0-9]*\).*/\2/'`;
+        echo $cmin | grep -v [0-9] >/dev/null 2>&1
+        if [ "$?" -eq "0" ]; then
+                cmin=0;
+        fi;
+        cpat=` uname -r | sed -e 's/^\([0-9]*\)\.\([0-9]*\).\([0-9]*\).*/\3/'`;
+        echo $cpat | grep -v [0-9] >/dev/null 2>&1
+        if [ "$?" -eq "0" ]; then
+                cpat=0;
+        fi;
+        echo -n "$cmaj.$cmin.$cpat ";
+        if ([ "$cmaj" -gt "1" ]) || ([ "$cmaj" -eq "1" ] && [ $cmin -gt "7" ]) || ([ "$cmaj" -eq 1 ] && [ $cmin -eq "7" ] && [ "$cpat" -ge "1" ]); then
+                echo "(should be ok)";
+        else
+                echo "(NO!)";
+                echo "";
+                echo "ns-allinone-${NSVER} has not been tested under versions of Cygwin older than";
+                echo "1.7.1. Your version ($cmaj.$cmin.$cpat) appears to be older than that. Success of";
+                echo "the install process is therefore NOT GUARANTEED.";
+                echo "";
+                cygversion="failed";
+                test_proceed;
+        fi;
+        echo -n "Checking filesystems are mounted as UNIX filetype... ";
+        mount | grep "textmode" >/dev/null 2>&1;
+        if [ "$?" -eq "0" ]; then
+                echo "NO!";
+                mount_test="failed";
+                echo "";
+                echo "It appears that some of your Cygwin shares are mounted as DOS file";
+                echo "type. This has not been tested, but is likely to result in failure of";
+                echo "validation tests. Success of the install process is also NOT";
+                echo "GUARANTEED.";
+                echo "";
+                echo "Refer to the Cygwin user guide for how to install Cygwin with the UNIX";
+                echo "file text mode.";
+                test_proceed;
+        else
+                echo "yes";
+                echo -n "Checking default mode is binmode... ";
+                echo ${CYGWIN} | grep "nobinmode" >/dev/null 2>&1;
+                if [ "$?" -eq "0" ]; then
+                        cyg_env_var="failed";
+                        echo "*** NO! ***";
+                        echo "";
+                        echo "Your \$CYGWIN environment variable specifies \"nobinmode\". This is";
+                        echo "likely to result in failure of validation tests, and (possibly) of";
+                        echo "the whole install process. You need to have the \$CYGWIN environment";
+                        echo "variable set to \"binmode\". Please refer to the Cygwin user guide for";
+                        echo "details on how to change this.";
+                        test_proceed;
+                else 
+                        echo "yes";
+                fi;
+        fi;                           
+
+        login=`whoami`
+        echo -n "Checking legitimate login name... ";
+        echo ${login} | grep " " >/dev/null 2>&1;
+        if [ "$?" -eq "0" ]; then
+                echo "NO!"; 
+                echo "";
+                echo "Your username (${login}) contains spaces,";
+                echo "which makes the installation of ns-2 impossible.";
+                echo "Please try to install ns-2 as a different user, whose";
+                echo "name does not contain any spaces.";
+                
+                test_proceed;
+        else 
+                echo "ok";
+        fi;
+
+        echo -n "Checking legitimate path name... ";
+        
+        installpath=`cygpath -d /`;
+        echo ${installpath} | grep " " >/dev/null 2>&1;
+        if [ "$?" -eq "0" ]; then
+                echo "NO!"; 
+                echo "";
+                echo "Your Cygwin installation path (${installpath}) contains spaces,";
+                echo "which makes the installation of ns-2 impossible.";
+                echo "Please reinstall Cygwin in a different directory, which";
+                echo "does not contain any spaces.";
+                test_proceed;
+        else 
+                echo "ok";
+        fi;
+
+        test_packages ${packages_base}        
+
+        echo -n "Checking for diff... ";
+        diff -v 2>&1 | grep -iv "not found" >/dev/null 2>&1;
+        if [ "$?" -eq "0" ]; then
+                echo "ok";
+        else
+                echo "NO!";
+                echo "";
+                echo "diff is not present on your system.";
+                echo "";
+                echo "Please install it using Cygwin's setup.exe";
+                echo "before trying to install the ns-2 distribution.";
+                test_proceed;
+        fi;     
+
+        echo -n "Checking for X... ";
+        test_packages ${packages_xorg}
+    }
+
+
+# Package VERSIONs. Change these when releasing new packages
+TCLVER=8.5.10
+TKVER=8.5.10
+OTCLVER=1.14
+TCLCLVER=1.20
+NSVER=2.35
+NAMVER=1.15
+XGRAPHVER=12.2
+ZLIBVER=1.2.3
+DEI80211MRVER=1.1.4
+
+# Get current path
+CUR_PATH=`pwd`
+
+OS_VERSION=`uname -a | grep Ubuntu`
+if [ $OS_VERSION="" ]; then
+	# 防止在其他系统下被执行
+	echo "Sorry, please run this script in Ubuntu linux ..."
+	exit 1
+fi
+
+ 
+# John's hack
+test -f ./otcl-$OTCLVER/libotcl.a && rm ./otcl-$OTCLVER/libotcl.so
+
+echo "============================================================"
+echo "* Build ns-$NSVER"
+echo "============================================================"
+
+cd ./ns-$NSVER
+if [ -f Makefile ] ; then 
+	make distclean
+fi
+
+if  [ "${test_cygwin}" = "true" ]; then
+        ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include --with-tcl-ver=$TCLVER --with-tk-ver=$TKVER || die "Ns configuration failed! Exiting ...";
+else
+        ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER --with-tcl-ver=$TCLVER --with-tk-ver=$TKVER || die "Ns configuration failed! Exiting ...";
+fi
+
+if make
+then
+	echo " Ns has been installed successfully." 
+else
+	echo "Ns make failed!"
+	echo "See http://www.isi.edu/nsnam/ns/ns-problems.html for problems"
+	exit
+fi
+
+cd ../
+
+
+exit 0
+
